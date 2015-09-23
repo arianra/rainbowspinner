@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="x-ua-compatible" content="ie=edge">
+	<title> RainbowSpinner Demo </title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.6/angular.min.js"></script>
+	<script src="rainbowspinner.js"></script>
+
+	<style>
+		section {
+		  position: absolute;
+		  top: 50%;
+		  left: 50%;
+		  transform: translate(-50%, -50%);
+		  width: 100%;
+		  height: 90vh;
+		}
+
+		div {
+		  z-index: -10;
+		  display: block;
+		  position: absolute;
+		  top: 50%;
+		  left: 50%;
+		  transform: translate(-50%, -50%);
+		  width: 90%;
+		  height: 90%;
+		}
+
+		section > span canvas {
+		  animation: rot 12s linear infinite;
+		  animation-timing-function: cubic-bezier(.3, .8, .6, .2);
+		}
+
+		div canvas {
+		  animation: rot 6s linear infinite;
+		  animation-timing-function: cubic-bezier(.3, .8, .6, .2);
+		}
+
+		@keyframes rot {
+		  100% {
+		    transform: rotate(360deg)
+		  }
+		}
+
+		html,
+		body {
+		  margin: 0;
+		  padding: 0;
+		}
+
+		body {
+		  overflow: hidden;
+		  height: 100%;
+		  width: 100%;
+		}
+	</style>
+</head>
+<body>
+	<span> 2 spinners stacked</span>
+
+	<section>
+		<span data-rainbow-spinner data-spinner-multiplier="8" data-spinner-seconds="0" data-spinner-stroke-reduction="8" data-spinner-arc-multiplier="5"></span>
+
+		<div>
+			<span data-rainbow-spinner data-spinner-multiplier="1" data-spinner-seconds="30" data-spinner-stroke-reduction="8" data-spinner-arc-multiplier="false" data-spinner-settings="{hsla: {saturation: '90%', lightness: '75%', alpha: '.9'}}"></span>
+		</div>
+	</section>
+
+	<script type="text/javascript">
+		angular.element(document).ready(function() {
+			angular.bootstrap(document, ['rainbowSpinner']);
+		});
+	</script>
+</body>
+</html>
