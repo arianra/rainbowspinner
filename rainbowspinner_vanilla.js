@@ -22,6 +22,7 @@
         fidelity: 5, 
         lineWidthReduction: 12, 
         arcMultiplier: 5,
+        arcAngleGap: 0,
         hsla: {
           saturation: '100%',
           lightness: '70%',
@@ -85,17 +86,28 @@
       
       function drawArc(state, timestamp, alpha) {
         var current = Math.round(state.tt / state.dt),
-            arcMultiplier = settings.arcMultiplier || fidelity.thickness;
+            arcMultiplier = settings.arcMultiplier || fidelity.thickness,
+            arcAngleGap = settings.arcAngleGap || 0;
         
+        //define arc slice
         ctx.beginPath();
-        ctx.arc(proportions.x, proportions.y, proportions.radius, rtd(arcMultiplier * (current)), rtd((arcMultiplier * (current)) + (arcMultiplier)), false);   
+        ctx.arc(proportions.x, proportions.y, proportions.radius, rtd(arcMultiplier * (current)), rtd((arcMultiplier * (current)) + (arcMultiplier - arcAngleGap)), false);
         
-        ctx.globalCompositeOperation = 'source-over';              
+        // clear arc slices if there is a gap, preventing jagged edges from occuring between slices
+        if (arcAngleGap){
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.lineWidth = proportions.lineWidth;
+          ctx.stroke();
+        } 
+        
+        //draw arc slice
+        ctx.globalCompositeOperation = 'source-over'; 
         ctx.strokeStyle = context._generateColor(current);
         ctx.lineWidth = proportions.lineWidth;
         ctx.stroke();
         ctx.closePath();
         
+        //clip inside of circle
         ctx.globalCompositeOperation = 'destination-out';
         ctx.beginPath();
         ctx.arc( proportions.x, proportions.y, proportions.radius - (proportions.lineWidth/2) +3, 0, Math.PI*2, false );
@@ -177,7 +189,7 @@
         callback: callback || function(){}
     });
 
-    context.cleanState = $.extend(true, {}, context.cleanState);
+    context.cleanState = $.extend(true, {}, context.state);
 
     function defaultStart(callback){
       if (callback) context.callback = callback;

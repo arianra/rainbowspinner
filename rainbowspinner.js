@@ -45,7 +45,8 @@
           alpha: '1'
         },
         lineWidthReduction: 12, // lineWidth is based on the proportions of the entire arc, this variable is used as a division, so ex. 12 means the lineWidth is 1/12th (+1/24th) of the radius
-        arcMultiplier: 5 // replacement for fidelity.thickness, set to false (as attribute) to fall back on fidelity.thickness
+        arcMultiplier: 5, // replacement for fidelity.thickness, set to false (as attribute) to fall back on fidelity.thickness
+        arcAngleGap: 0
         //lineWidth multiplier?
         //radius mulitplier?
       }
@@ -66,6 +67,7 @@
       if ($attrs['spinnerSettings']) angular.extend(settings, $scope.$eval($attrs['spinnerSettings']));
       if ($attrs['spinnerStrokeReduction']) settings.lineWidthReduction = $scope.$eval($attrs['spinnerStrokeReduction']);
       if ($attrs['spinnerArcMultiplier']) settings.arcMultiplier = $scope.$eval($attrs['spinnerArcMultiplier']);
+      if ($attrs['spinnerArcAngleGap']) settings.arcAngleGap = $scope.$eval($attrs['spinnerArcAngleGap']);
 
       context._canvas = document.createElement('canvas');
       context._ctx = context._canvas.getContext('2d');
@@ -87,20 +89,18 @@
 
     function defaultResize() {
       var canvas = context._canvas,
+        pixelRatio = 2,
         dimensions;
 
       dimensions = context._dimensions = getDimensions(context.element.parent()); //parent dimensions are affected by this element and therefor aren't accurate unless this element has position absolute css
       
-      //canvas.width = dimensions.width;
-      //canvas.height = dimensions.height;
-      
-      canvas.width = dimensions.width * 2;
-      canvas.height = dimensions.height * 2;
+      canvas.width = dimensions.width * pixelRatio;
+      canvas.height = dimensions.height * pixelRatio;
       
       canvas.style.width = dimensions.width + 'px';
       canvas.style.height = dimensions.height + 'px';
       
-      canvas.getContext('2d').scale(2,2);
+      canvas.getContext('2d').scale(pixelRatio,pixelRatio);
       
       if (context._running && context._fixedTimeStep.isRunning()) context._fixedTimeStep.reset(); //should also do a redraw with the last state returned by reset()
 
@@ -118,34 +118,34 @@
       context._running = true;
       context._fixedTimeStep.start(drawArc);  
       
-      //ctx.beginPath();
+
       ctx.arc( proportions.x, proportions.y, proportions.radius + (proportions.lineWidth/2) -1, 0, Math.PI*2, false );
-      //ctx.lineWidth = proportions.lineWidth;
-      //ctx.fill();
-      //ctx.closePath();
       ctx.clip();
       
       function drawArc(state, timestamp, alpha) {
         var current = Math.round(state.tt / state.dt),
-            arcMultiplier = settings.arcMultiplier || fidelity.thickness;
+            arcMultiplier = settings.arcMultiplier || fidelity.thickness,
+            arcAngleGap = settings.arcAngleGap || 0;
         
-        //clear pixels beneath next arc slice
-        //ctx.globalCompositeOperation = 'destination-out';
+        //define arc slice
         ctx.beginPath();
-        ctx.arc(proportions.x, proportions.y, proportions.radius -1, rtd(arcMultiplier * (current)), rtd((arcMultiplier * (current)) + (arcMultiplier)), false);
-        //ctx.lineWidth = proportions.lineWidth;
-        //ctx.stroke();
-        //ctx.closePath();      
+        ctx.arc(proportions.x, proportions.y, proportions.radius, rtd(arcMultiplier * (current)), rtd((arcMultiplier * (current)) + (arcMultiplier - arcAngleGap)), false);
         
-        //draw next arc slice
-        ctx.globalCompositeOperation = 'source-over';        
-        //ctx.beginPath();        
-        //ctx.arc(proportions.x, proportions.y, proportions.radius -1, rtd(arcMultiplier * (current)), rtd((arcMultiplier * (current)) + (arcMultiplier)), false);
+        // clear arc slices if there is a gap, preventing jagged edges from occuring between slices
+        if (arcAngleGap){
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.lineWidth = proportions.lineWidth;
+          ctx.stroke();
+        } 
+        
+        //draw arc slice
+        ctx.globalCompositeOperation = 'source-over'; 
         ctx.strokeStyle = context._generateColor(current);
         ctx.lineWidth = proportions.lineWidth;
         ctx.stroke();
         ctx.closePath();
         
+        //clip inside of circle
         ctx.globalCompositeOperation = 'destination-out';
         ctx.beginPath();
         ctx.arc( proportions.x, proportions.y, proportions.radius - (proportions.lineWidth/2) +3, 0, Math.PI*2, false );
