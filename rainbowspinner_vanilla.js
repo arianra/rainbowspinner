@@ -23,6 +23,7 @@
         lineWidthReduction: 12, 
         arcMultiplier: 5,
         arcAngleGap: 0,
+        startFull: false,
         hsla: {
           saturation: '100%',
           lightness: '70%',
@@ -76,7 +77,16 @@
           settings = context.settings,
           fidelity = context._fidelity,
           proportions = setArcProportions(context._dimensions, settings.lineWidthReduction),
-          endTime = settings.seconds * 1000; //multiply by milliseconds
+          endTime = settings.seconds * 1000, //multiply by milliseconds
+
+          arcMultiplier = settings.arcMultiplier || fidelity.thickness,
+          arcAngleGap = settings.arcAngleGap || 0,
+          initialSpinTotal = (settings.startFull) ? 360/arcMultiplier : 0,
+          initialSpin = 0;
+          
+      if(settings.startFull){
+        for( ; ++initialSpin < initialSpinTotal; drawArc({tt:0, dt:1}) );
+      }
 
       context._running = true;
       context._fixedTimeStep.start(drawArc);  
@@ -85,9 +95,7 @@
       ctx.clip();
       
       function drawArc(state, timestamp, alpha) {
-        var current = Math.round(state.tt / state.dt),
-            arcMultiplier = settings.arcMultiplier || fidelity.thickness,
-            arcAngleGap = settings.arcAngleGap || 0;
+        var current = Math.round(state.tt / state.dt) + initialSpinTotal;
         
         //define arc slice
         ctx.beginPath();

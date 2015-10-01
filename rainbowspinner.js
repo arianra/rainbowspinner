@@ -46,7 +46,8 @@
         },
         lineWidthReduction: 12, // lineWidth is based on the proportions of the entire arc, this variable is used as a division, so ex. 12 means the lineWidth is 1/12th (+1/24th) of the radius
         arcMultiplier: 5, // replacement for fidelity.thickness, set to false (as attribute) to fall back on fidelity.thickness
-        arcAngleGap: 0
+        arcAngleGap: 0,
+        fullStart: false
         //lineWidth multiplier?
         //radius mulitplier?
       }
@@ -68,6 +69,7 @@
       if ($attrs['spinnerStrokeReduction']) settings.lineWidthReduction = $scope.$eval($attrs['spinnerStrokeReduction']);
       if ($attrs['spinnerArcMultiplier']) settings.arcMultiplier = $scope.$eval($attrs['spinnerArcMultiplier']);
       if ($attrs['spinnerArcAngleGap']) settings.arcAngleGap = $scope.$eval($attrs['spinnerArcAngleGap']);
+      if ($attrs['spinnerStartFull']) settings.fullStart = $scope.$eval($attrs['spinnerStartFull']);
 
       context._canvas = document.createElement('canvas');
       context._ctx = context._canvas.getContext('2d');
@@ -113,19 +115,25 @@
         settings = context.settings,
         fidelity = context._fidelity,
         proportions = setArcProportions(context._dimensions, settings.lineWidthReduction),
-        endTime = settings.amount * 1000; //multiply by milliseconds
-
-      context._running = true;
-      context._fixedTimeStep.start(drawArc);  
+        endTime = settings.amount * 1000, //multiply by milliseconds
+        
+        arcMultiplier = settings.arcMultiplier || fidelity.thickness,
+        arcAngleGap = settings.arcAngleGap || 0,
+        initialSpinTotal = (settings.fullStart) ? 360/arcMultiplier : 0,
+        initialSpin = 0;
       
+      if(settings.fullStart){
+        for( ; ++initialSpin < initialSpinTotal; drawArc({tt:0, dt:1}) );
+      }
+      
+      context._running = true;
+      context._fixedTimeStep.start(drawArc);        
 
       ctx.arc( proportions.x, proportions.y, proportions.radius + (proportions.lineWidth/2) -1, 0, Math.PI*2, false );
       ctx.clip();
       
       function drawArc(state, timestamp, alpha) {
-        var current = Math.round(state.tt / state.dt),
-            arcMultiplier = settings.arcMultiplier || fidelity.thickness,
-            arcAngleGap = settings.arcAngleGap || 0;
+        var current = Math.round(state.tt / state.dt) + initialSpinTotal;
         
         //define arc slice
         ctx.beginPath();
@@ -169,7 +177,7 @@
 
     function setArcProportions(dimensions, lineWidthReduction) {
       var bounds = (dimensions.width <= dimensions.height) ? dimensions.width : dimensions.height,
-        lineWidthRedux = lineWidthReduction || 12;
+          lineWidthRedux = lineWidthReduction || 12;
 
       return {
         x: (dimensions.width / 2),
